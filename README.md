@@ -1,4 +1,4 @@
-# basic_op5_install
+# Playbook for basic installation of OP5 Monitor
 Simple playbook to install OP5 Monitor from repos. Needs Centos7/RHEL7 server running. Selinux in enforcing but OP5 Monitor services running unconfined.
 
 OP5s public repo: http://repos.op5.com/el7/x86_64/monitor/8/updates/
