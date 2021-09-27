@@ -1,0 +1,138 @@
+---
+- hosts: all
+  become: yes
+
+  vars:
+    local_repos:
+      - file: CentOS-Base
+        name: CentOS-Base
+        description: CentOS-Base
+        baseurl: http://<URL>
+        gpgkey: http://<URL>/RPM-GPG-KEY-CentOS-7
+        fingerprint: "6341 AB27 53D7 8A78 A7C2  7BB1 24C6 A8A7 F4A8 0EB5"
+      - file: epel
+        name: epel
+        description: Extra Packages for Enterprise Linux 7
+        baseurl: http://<URL>/epel
+        gpgkey: http://<URL>/epel/RPM-GPG-KEY-EPEL-7
+        fingerprint: "91E9 7D7C 4A5E 96F1 7F3E  888F 6A2F AEA2 352C 64E5"
+      - file: op5-release
+        name: op5-Monitor-Updates
+        description: op5-Monitor-Updates
+        baseurl: http://<URL>/op5-monitor-updates
+        gpgkey: http://<URL>/RPM-GPG-KEY-op5
+        fingerprint: "5063 C039 1143 B66E C653  D467 2F24 77F3 F6E3 ADE7"
+
+    op5_firewall:
+      - {port: "80", proto: "tcp", state: "enabled", zone: "public"}
+      - {port: "443", proto: "tcp", state: "enabled", zone: "public"}
+      - {port: "5666", proto: "tcp", state: "enabled", zone: "public"}
+      - {port: "15551", proto: "tcp", state: "enabled", zone: "public"}
+      - {port: "161", proto: "udp", state: "enabled", zone: "public"}
+      - {port: "162", proto: "udp", state: "enabled", zone: "public"}
+      - {port: "514", proto: "udp", state: "enabled", zone: "public"}
+
+    abrt_services:
+      - abrt-ccpp
+      - abrtd
+      - abrt-oops
+      - abrt-pstoreoops
+      - abrt-vmcore
+      - abrt-xorg
+
+  tasks:
+
+    - name: Clean yum.repos.d and add local repos
+      command: echo Removing old repos and adding new
+      notify: "Fix repos"
+
+    - name: Flush handlers
+      meta: flush_handlers
+
+    - name: Firewalld Rules
+      firewalld:
+        port: "{{ item.port }}/{{ item.proto }}"
+        state: "{{ item.state }}"
+        zone: "{{ item.zone }}"
+        permanent: yes
+        immediate: yes
+      with_items: "{{ op5_firewall }}"
+
+    - name: Ensure OP5-monitor is installed
+      yum:
+        name: op5-monitor
+        state: present
+        update_cache: true
+      notify: "Fix repos"
+
+    - name: Ensure OP5-monitor is started
+      systemd:
+        name: op5-monitor
+        enabled: yes
+        state: started
+
+    - name: Flush handlers
+      meta: flush_handlers
+
+    - name: Ensure selinux debug tools installed
+      yum:
+        name: policycoreutils-python, setroubleshoot
+        state: present
+
+    - name: Ensure abrt services are stopped
+      systemd:
+        name: "{{ item }}"
+        enabled: no
+        state: stopped
+        masked: yes
+      with_items: "{{ abrt_services }}"
+
+    - name: Set selinux context
+      sefcontext:
+        target: "{{ item.target }}"
+        setype: "{{ item.setype }}"
+        reload: True
+        state: present
+      with_items:
+      - { target: '/opt/monitor/.ssh(/.*)?', setype: 'ssh_home_t' }
+      - { target: '/opt/monitor/var', setype: 'var_log_t' }
+      - { target: '/opt/monitor/var/naemon.log', setype: 'var_log_t' }
+      - { target: '/opt/monitor/var/archives(/.*)?', setype: 'var_log_t' }
+      - { target: '/opt/monitor/var/rw(/.*)?', setype: 'var_run_t' }
+      - { target: '/var/cache/naemon(/.*)?', setype: 'var_run_t' }
+      - { target: '/opt/monitor/op5/merlin/merlin.conf', setype: 'etc_t' }
+      - { target: '/opt/monitor/etc(/.*)?', setype: 'etc_t' }
+      - { target: '/usr/sbin/httpd', setype: 'bin_t' }
+      - { target: '/usr/sbin/snmpd', setype: 'bin_t' }
+      - { target: '/usr/sbin/smsd', setype: 'bin_t' }
+
+    - name: Relabel filesystem
+      command: touch /.autorelabel
+
+    - name: Reboot
+      reboot:
+
+
+  handlers:
+
+    - name: Remove all repos existing in /etc/yum.repos.d/
+      shell: "rm -rf /etc/yum.repos.d/*"
+      listen: "Fix repos"
+
+    - name: Setup local repos
+      yum_repository:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        baseurl: "{{ item.baseurl }}"
+        gpgcheck: True
+      with_items: "{{ local_repos }}"
+      listen: "Fix repos"
+
+    - name: Import RPM GPG keys
+      rpm_key:
+        key: "{{ item.gpgkey }}"
+        fingerprint: "{{ item.fingerprint }}"
+        state: "present"
+      with_items: "{{ local_repos }}"
+      listen: "Fix repos"
