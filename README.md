@@ -2,9 +2,9 @@
 Simple playbook to install OP5 Monitor from repos. Needs Centos7/RHEL7 server running. Selinux in enforcing but OP5 Monitor services running unconfined.
 
 Repos required:
-*CentOS-7 - Base (9GB)
-*Extra Packages for Enterprise Linux 7 - x86_64 - Epel (17GB)
-*op5-monitor-updates/7/x86_64 - op5 Monitor Updates (2,4GB)
+* CentOS-7 - Base (9GB)
+* Extra Packages for Enterprise Linux 7 - x86_64 - Epel (17GB)
+* op5-monitor-updates/7/x86_64 - op5 Monitor Updates (2,4GB)
 
 OP5s public repo: http://repos.op5.com/el7/x86_64/monitor/8/updates/
 
