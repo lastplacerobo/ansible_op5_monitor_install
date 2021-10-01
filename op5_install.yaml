@@ -74,11 +74,6 @@
     - name: Flush handlers
       meta: flush_handlers
 
-    - name: Ensure selinux debug tools installed
-      yum:
-        name: policycoreutils-python, setroubleshoot
-        state: present
-
     - name: Ensure abrt services are stopped
       systemd:
         name: "{{ item }}"
