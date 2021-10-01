@@ -81,6 +81,11 @@
         state: stopped
         masked: yes
       with_items: "{{ abrt_services }}"
+      
+    - name: Ensure selinux debug tools installed
+      yum:
+        name: policycoreutils-python, setroubleshoot
+        state: present
 
     - name: Set selinux context
       sefcontext:
