@@ -6,7 +6,7 @@ Repos required:
 * Extra Packages for Enterprise Linux 7 - x86_64 - Epel 
 * op5-monitor-updates/7/x86_64 - op5 Monitor Updates 
 
-OP5s public repo: http://repos.op5.com/el7/x86_64/monitor/8/updates/
+OP5s public repo: https://repos.op5.com/el7/x86_64/monitor/8/updates/
 
 Selinux conf: https://support.itrsgroup.com/hc/en-us/articles/360023683114-How-to-configure-OP5-Monitor-with-SELinux-enforcing
 
